@@ -12,7 +12,6 @@
         android:id="@+id/media_image"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        app:optimizeDisplay="true" />
-
+        app:optimizeDisplay="true"/>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
