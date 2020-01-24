@@ -16,6 +16,7 @@ import androidx.camera.core.ImageAnalysis.ImageReaderMode.*
 import androidx.camera.core.ImageCapture.OnImageSavedListener
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import androidx.preference.PreferenceManager
 import com.google.android.material.snackbar.Snackbar
 import com.liempo.drowsy.Constants.FILENAME_DATE_FORMAT
 import com.liempo.drowsy.Constants.FILENAME_FORMAT
@@ -114,7 +115,10 @@ class CameraFragment : Fragment() {
             cancel_alarm_button.hide()
         }
 
-        timer = object: CountDownTimer(4000, 1000) {
+        val seconds = (PreferenceManager.getDefaultSharedPreferences(context)
+            .getInt("pref_seconds", 3) + 1).toLong() * 1000L
+
+        timer = object: CountDownTimer(seconds , 1000) {
 
             override fun onTick(millisUntilFinished: Long) {
                 time_text.text = "${millisUntilFinished / 1000}"
@@ -179,7 +183,9 @@ class CameraFragment : Fragment() {
                 ), FaceAnalyzer().apply {
 
                     pointsListListener = { points ->
-                        face_points_view.points = points
+                        // Handles multi-threading issues
+                        if (face_points_view != null)
+                            face_points_view.points = points
                     }
                     analysisSizeListener = {
                         updateOverlayTransform(face_points_view, it)
@@ -315,6 +321,9 @@ class CameraFragment : Fragment() {
     }
 
     private fun startCount() {
+        // Handles error in threading
+        if (time_text == null) return
+
         time_text.visibility = View.VISIBLE
 
         if (!isTimerRunning) {
@@ -328,6 +337,9 @@ class CameraFragment : Fragment() {
     }
 
     private fun stopCount() {
+        // Handles error in threading
+        if (time_text == null) return
+
         time_text.visibility = View.INVISIBLE
 
         if (isTimerRunning) {
