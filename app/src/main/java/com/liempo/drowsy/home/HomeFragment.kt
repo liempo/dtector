@@ -8,7 +8,7 @@ import android.view.ViewGroup
 import androidx.navigation.fragment.findNavController
 
 import com.liempo.drowsy.R
-import kotlinx.android.synthetic.main.home_fragment.*
+import kotlinx.android.synthetic.main.fragment_home.*
 
 class HomeFragment : Fragment() {
 
@@ -16,7 +16,7 @@ class HomeFragment : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? = inflater.inflate(
-        R.layout.home_fragment,
+        R.layout.fragment_home,
         container, false)
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -24,6 +24,9 @@ class HomeFragment : Fragment() {
 
         camera_card.setOnClickListener { findNavController()
             .navigate(R.id.action_home_to_camera) }
+
+        gallery_card.setOnClickListener { findNavController()
+            .navigate(R.id.action_home_to_gallery)}
     }
 
 }

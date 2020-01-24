@@ -53,6 +53,8 @@ dependencies {
 
     // Essential utilities
     implementation 'com.jakewharton.timber:timber:4.7.1'
+    implementation 'com.github.bumptech.glide:glide:4.11.0'
+    annotationProcessor 'com.github.bumptech.glide:compiler:4.11.0'
 
     // Firebase stuff
     implementation 'com.google.firebase:firebase-ml-vision:24.0.1'

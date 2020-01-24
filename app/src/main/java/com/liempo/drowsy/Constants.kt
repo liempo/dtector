@@ -10,7 +10,7 @@ object Constants {
     internal val FILENAME_DATE_FORMAT = SimpleDateFormat(
         "MM_dd_yyyy_HHmmss", Locale.US)
     internal val DISPLAY_DATE_FORMAT = SimpleDateFormat(
-        "dd MMMM yyyy", Locale.US)
+        "dd MMM yyyy", Locale.US)
     internal val DISPLAY_TIME_FORMAT = SimpleDateFormat(
         "hh:mm a", Locale.US)
 }
