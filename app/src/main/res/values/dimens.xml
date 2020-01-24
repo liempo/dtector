@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <dimen name="card_height_full">128dp</dimen>
+    <dimen name="card_height_half">72dp</dimen>
+    <dimen name="card_margin_half">12dp</dimen>
+    <dimen name="card_margin_full">24dp</dimen>
+    <dimen name="card_title_margin">12dp</dimen>
+    <dimen name="card_icon_width">48dp</dimen>
+    <dimen name="card_icon_height">48dp</dimen>
+    <dimen name="card_icon_padding">12dp</dimen>
+
+</resources>

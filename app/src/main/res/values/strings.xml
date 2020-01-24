@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">Dtector</string>
+    <string name="title_detect">Detect</string>
+    <string name="title_gallery">Gallery</string>
+    <string name="title_settings">Settings</string>
+    <string name="title_about">About</string>
 </resources>
