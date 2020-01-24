@@ -13,6 +13,8 @@
         android:keepScreenOn="true"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        app:cameraAudio="off"/>
+        app:cameraAudio="off"
+        app:cameraEngine="camera2"
+        app:cameraExperimental="true"/>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
