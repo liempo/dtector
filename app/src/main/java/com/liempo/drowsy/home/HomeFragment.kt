@@ -22,11 +22,15 @@ class HomeFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        camera_card.setOnClickListener { findNavController()
-            .navigate(R.id.action_home_to_camera) }
+        camera_card.setOnClickListener {
+            findNavController().navigate(
+                HomeFragmentDirections.openCamera())
+        }
 
-        gallery_card.setOnClickListener { findNavController()
-            .navigate(R.id.action_home_to_gallery)}
+        gallery_card.setOnClickListener {
+            findNavController().navigate(
+                HomeFragmentDirections.openGallery())
+        }
     }
 
 }

@@ -11,10 +11,10 @@
         android:label="Home"
         tools:layout="@layout/fragment_home" >
         <action
-            android:id="@+id/action_home_to_camera"
+            android:id="@+id/openCamera"
             app:destination="@id/camera" />
         <action
-            android:id="@+id/action_home_to_gallery"
+            android:id="@+id/openGallery"
             app:destination="@id/gallery" />
     </fragment>
     <fragment
@@ -28,7 +28,7 @@
         android:label="Gallery"
         tools:layout="@layout/fragment_gallery" >
         <action
-            android:id="@+id/action_gallery_to_photo"
+            android:id="@+id/previewImage"
             app:destination="@+id/photo" />
     </fragment>
     <fragment

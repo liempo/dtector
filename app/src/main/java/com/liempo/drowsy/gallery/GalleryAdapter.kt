@@ -6,6 +6,7 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.cardview.widget.CardView
+import androidx.navigation.findNavController
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.liempo.drowsy.Constants.DISPLAY_DATE_FORMAT
@@ -31,13 +32,21 @@ class GalleryAdapter(private val items: List<String>,
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val filename = items[position]
         val date = getDateFromFilename(filename)
+        val path = "${folder}${File.separator}${filename}"
 
         Glide.with(holder.media)
-            .load("${folder}${File.separator}${filename}")
+            .load(path)
             .into(holder.media)
 
         holder.date.text = DISPLAY_DATE_FORMAT.format(date)
         holder.time.text = DISPLAY_TIME_FORMAT.format(date)
+
+        holder.card.tag = path
+        holder.card.setOnClickListener {
+            it.findNavController().navigate(
+                GalleryFragmentDirections.
+                    previewImage(path))
+        }
 
     }
 
