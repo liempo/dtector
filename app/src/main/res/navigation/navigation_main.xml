@@ -18,5 +18,5 @@
         android:id="@+id/camera"
         android:name="com.liempo.drowsy.camera.CameraFragment"
         android:label="Camera"
-        tools:layout="@layout/camera_fragment" />
+        tools:layout="@layout/fragment_camera" />
 </navigation>

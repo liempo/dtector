@@ -1,36 +1,507 @@
 package com.liempo.drowsy.camera
 
-import androidx.lifecycle.ViewModelProviders
+import android.Manifest.permission.CAMERA
+import android.content.Context
+import android.content.pm.PackageManager
+import android.graphics.Matrix
+import android.hardware.display.DisplayManager
+import android.media.MediaPlayer
 import android.os.Bundle
+import android.os.CountDownTimer
+import android.util.Size
+import android.view.*
+import android.widget.Toast
+import androidx.camera.core.*
+import androidx.camera.core.ImageAnalysis.ImageReaderMode.*
+import androidx.camera.core.ImageCapture.OnImageSavedListener
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
-
+import com.google.android.material.snackbar.Snackbar
 import com.liempo.drowsy.R
-import kotlinx.android.synthetic.main.camera_fragment.*
+import kotlinx.android.synthetic.main.fragment_camera.*
+import timber.log.Timber
+import java.io.File
+import java.text.SimpleDateFormat
+import java.util.*
+import kotlin.math.roundToInt
 
 class CameraFragment : Fragment() {
 
-    private lateinit var model: CameraViewModel
+    /** Internal variable used to keep track
+     * of the use-case's output rotation */
+    private var bufferRotation: Int = 0
+
+    /** Internal variable used to
+     * keep track of the view's rotation */
+    private var viewFinderRotation: Int? = null
+
+    /** Internal variable used to keep
+     * track of the use-case's output dimension */
+    private var bufferDimens: Size = Size(0, 0)
+
+    /** Internal variable used to
+     * keep track of the view's dimension */
+    private var viewFinderDimens: Size = Size(0, 0)
+
+    /** Internal variable used to keep
+     * track of the view's display */
+    private var viewFinderDisplay: Int = -1
+
+    /** Internal variable used to keep
+     * track of the image analysis dimension */
+    private var cachedAnalysisDimens = Size(0, 0)
+
+    /** Internal variable used to keep track
+     * of the calculated dimension of the preview image */
+    private var cachedTargetDimens = Size(0, 0)
+
+    /** Internal reference of the [DisplayManager] */
+    private lateinit var displayManager: DisplayManager
+
+    private var isTimerRunning = false
+    /** For counting purposes lol */
+    private lateinit var timer: CountDownTimer
+
+    /** Sound objects for alarm stuff*/
+    private lateinit var alarm: MediaPlayer
+    private lateinit var tick: MediaPlayer
+
+    /** CameraX components */
+    private lateinit var preview: Preview
+    private lateinit var analysis: ImageAnalysis
+    private lateinit var capture: ImageCapture
+
+    /** CameraX listeners */
+    private lateinit var onImageSavedListener: OnImageSavedListener
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? = inflater.inflate(
-        R.layout.camera_fragment,
+        R.layout.fragment_camera,
         container, false)
-
-    override fun onActivityCreated(savedInstanceState: Bundle?) {
-        super.onActivityCreated(savedInstanceState)
-        model = ViewModelProviders.of(this)
-            .get(CameraViewModel::class.java)
-    }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        camera.setLifecycleOwner(viewLifecycleOwner)
+        // Check Camera permissions
+        if (activity?.checkSelfPermission(CAMERA)
+            == PackageManager.PERMISSION_GRANTED)
+            camera_preview.post { startCameraX() }
+        else {
+            Timber.i("Requesting permission for camera")
+            requestPermissions(arrayOf(CAMERA), RC_CAMERA_PERMISSION)
+        }
+
+        tick = MediaPlayer.create(context, R.raw.tick)
+        alarm = MediaPlayer.create(context, R.raw.alarm)
+
+        cancel_alarm_button.setOnClickListener {
+            if (alarm.isPlaying) {
+                alarm.pause()
+                alarm.seekTo(0)
+            }
+
+            if (tick.isPlaying) {
+                tick.pause()
+                tick.seekTo(0)
+            }
+
+            cancel_alarm_button.hide()
+        }
+
+        timer = object: CountDownTimer(4000, 1000) {
+
+            override fun onTick(millisUntilFinished: Long) {
+                time_text.text = "${millisUntilFinished / 1000}"
+            }
+
+            override fun onFinish() {
+                startAlarm()
+            }
+        }
+
+        // Initially hide fab
+        cancel_alarm_button.hide()
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+
+        val isGranted = grantResults.all { it == PackageManager.PERMISSION_GRANTED }
+        Timber.i("IsPermissionGranted: $isGranted")
+
+        if (requestCode == RC_CAMERA_PERMISSION && isGranted)
+            camera_preview.post { startCameraX() }
+        else {
+            Snackbar.make(
+                camera_preview,
+                "Permissions not granted by the user.",
+                Snackbar.LENGTH_SHORT
+            ).show()
+        }
+    }
+
+    private fun startCameraX() {
+        val rotation = camera_preview.display.rotation
+        val ratio = AspectRatio.RATIO_16_9
+
+        // Initialize the display and rotation
+        // from texture view information
+        viewFinderDisplay = camera_preview.display.displayId
+        viewFinderRotation = getDisplaySurfaceRotation(
+            camera_preview.display) ?: 0
+
+        // Initialize public use-cases with the given config
+        preview = Preview(
+            PreviewConfig.Builder().apply {
+                setLensFacing(CameraX.LensFacing.FRONT)
+                setTargetAspectRatio(ratio)
+                setTargetRotation(rotation)
+            }.build())
+
+        analysis = ImageAnalysis(ImageAnalysisConfig.Builder().apply {
+            setLensFacing(CameraX.LensFacing.FRONT)
+            setImageReaderMode(ACQUIRE_LATEST_IMAGE)
+            setTargetRotation(rotation)
+            setTargetAspectRatio(ratio)
+        }.build()).apply {
+            setAnalyzer(
+                ContextCompat.getMainExecutor(
+                    context
+                ), FaceAnalyzer().apply {
+
+                    pointsListListener = { points ->
+                        face_points_view.points = points
+                    }
+                    analysisSizeListener = {
+                        updateOverlayTransform(face_points_view, it)
+                    }
+                    noFaceListener = {
+                        stopCount()
+                    }
+                    eyesClosedListener = {
+                        if (alarm.isPlaying.not()) {
+                            if (it)
+                                startCount()
+                            else stopCount()
+                        }
+                    }
+                })
+        }
+
+        capture = ImageCapture(ImageCaptureConfig.Builder()
+            .setLensFacing(CameraX.LensFacing.FRONT)
+            .setTargetAspectRatio(ratio)
+            .setTargetRotation(rotation)
+            .build())
+
+
+        onImageSavedListener = object: OnImageSavedListener {
+            override fun onImageSaved(file: File) {
+                Toast.makeText(context, "Saved",
+                    Toast.LENGTH_LONG).show()
+            }
+
+            override fun onError(
+                imageCaptureError: ImageCapture.ImageCaptureError,
+                message: String,
+                cause: Throwable?
+            ) {
+                Toast.makeText(context, "Error: $message",
+                    Toast.LENGTH_LONG).show()
+                Timber.e(cause)
+            }
+
+        }
+
+        // Every time the view finder is updated, recompute layout
+        preview.setOnPreviewOutputUpdateListener {
+            // To update the SurfaceTexture, we have to remove it and re-add it
+            val parent = camera_preview.parent as ViewGroup
+            parent.removeView(camera_preview)
+            parent.addView(camera_preview, 0)
+
+            camera_preview.surfaceTexture = it.surfaceTexture
+            bufferRotation = it.rotationDegrees
+            val rot = getDisplaySurfaceRotation(
+                camera_preview.display)
+            updateTransform(camera_preview, rot,
+                it.textureSize, viewFinderDimens)
+            updateOverlayTransform(face_points_view,
+                cachedAnalysisDimens)
+        }
+
+        // Every time the provided texture view changes, recompute layout
+        camera_preview.addOnLayoutChangeListener {
+                view, left, top, right, bottom, _, _, _, _ ->
+            val vf = view as TextureView
+            val newViewFinderDimens = Size(
+                right - left, bottom - top)
+            val rot = getDisplaySurfaceRotation(vf.display)
+            updateTransform(vf, rot,
+                bufferDimens, newViewFinderDimens)
+            updateOverlayTransform(face_points_view,
+                cachedAnalysisDimens)
+        }
+
+        val displayListener = object : DisplayManager.DisplayListener {
+            override fun onDisplayAdded(displayId: Int) = Unit
+            override fun onDisplayRemoved(displayId: Int) = Unit
+            override fun onDisplayChanged(displayId: Int) {
+                if (displayId == viewFinderDisplay) {
+                    val display = displayManager.getDisplay(displayId)
+                    val rot = getDisplaySurfaceRotation(display)
+                    updateTransform(camera_preview, rot,
+                        bufferDimens, viewFinderDimens)
+                    updateOverlayTransform(face_points_view,
+                        cachedAnalysisDimens)
+                }
+            }
+        }
+
+        // Every time the orientation of device changes, recompute layout
+        displayManager = requireContext()
+            .getSystemService(Context.DISPLAY_SERVICE) as DisplayManager
+        displayManager.registerDisplayListener(displayListener, null)
+
+        // Remove the display listeners when the view is detached to avoid
+        // holding a reference to the View outside of a Fragment.
+        // NOTE: Even though using a weak reference should take care of this,
+        // we still try to avoid unnecessary calls to the listener this way.
+        camera_preview.addOnAttachStateChangeListener(
+            object : View.OnAttachStateChangeListener {
+                override fun onViewAttachedToWindow(view: View?) {
+                    displayManager.registerDisplayListener(displayListener, null)
+                }
+
+                override fun onViewDetachedFromWindow(view: View?) {
+                    displayManager.registerDisplayListener(displayListener, null)
+                }
+            })
+
+        // Bind preview and analyzer
+        CameraX.bindToLifecycle(this, preview, analysis, capture)
+    }
+
+    private fun startAlarm() {
+        time_text.text = getString(R.string.msg_wake_up)
+
+        if (tick.isPlaying) {
+            tick.pause()
+            tick.seekTo(0)
+            alarm.start()
+            cancel_alarm_button.show()
+        }
+
+        // Generate a filename
+        val filename = String.format(FILENAME_FORMAT,
+            FILENAME_DATE_FORMAT.format(Calendar.getInstance().time))
+        val folder = File(context?.applicationInfo?.dataDir, FOLDER_NAME)
+        // Check dirs
+        if ((folder.exists() && folder.isDirectory).not())
+            folder.mkdir()
+        val captured = File(folder, filename)
+
+        capture.takePicture(captured, ContextCompat
+            .getMainExecutor(context), onImageSavedListener)
+    }
+
+    private fun startCount() {
+        time_text.visibility = View.VISIBLE
+
+        if (!isTimerRunning) {
+            isTimerRunning = true
+            timer.start()
+        }
+
+        if (tick.isPlaying.not()) {
+            tick.start()
+        }
+    }
+
+    private fun stopCount() {
+        time_text.visibility = View.INVISIBLE
+
+        if (isTimerRunning) {
+            isTimerRunning = false
+            timer.cancel()
+
+            if (tick.isPlaying) {
+                tick.pause()
+                tick.seekTo(0)
+            }
+
+            if (alarm.isPlaying) {
+                alarm.pause()
+                alarm.seekTo(0)
+            }
+        }
+    }
+
+    /** Helper function that fits a camera preview into the given [TextureView] */
+    private fun updateTransform(
+        textureView: TextureView?, rotation: Int?, newBufferDimens: Size,
+        newViewFinderDimens: Size
+    ) {
+        // This should not happen anyway, but now the linter knows
+        val tv = textureView ?: return
+
+        if (rotation == viewFinderRotation &&
+            Objects.equals(newBufferDimens, bufferDimens) &&
+            Objects.equals(newViewFinderDimens, viewFinderDimens)
+        ) {
+            // Nothing has changed, no need
+            // to transform output again
+            return
+        }
+
+        if (rotation == null) {
+            // Invalid rotation - wait for
+            // valid inputs before setting matrix
+            return
+        } else {
+            // Update internal field with new inputs
+            viewFinderRotation = rotation
+        }
+
+        if (newBufferDimens.width == 0 ||
+            newBufferDimens.height == 0) {
+            // Invalid buffer dimens - wait for
+            // valid inputs before setting matrix
+            return
+        } else {
+            // Update internal field with new inputs
+            bufferDimens = newBufferDimens
+        }
+
+        if (newViewFinderDimens.width == 0 ||
+            newViewFinderDimens.height == 0) {
+            // Invalid view finder dimens - wait for
+            // valid inputs before setting matrix
+            return
+        } else {
+            // Update internal field with new inputs
+            viewFinderDimens = newViewFinderDimens
+        }
+
+        val matrix = Matrix()
+
+        // Compute the center of the view finder
+        val centerX = viewFinderDimens.width / 2f
+        val centerY = viewFinderDimens.height / 2f
+
+        // Correct preview output to account for display rotation
+        matrix.postRotate(-viewFinderRotation!!
+            .toFloat(), centerX, centerY)
+
+        // Buffers are rotated relative to the device's
+        // 'natural' orientation: swap width and height
+        val bufferRatio = bufferDimens.height /
+                bufferDimens.width.toFloat()
+
+        val scaledWidth: Int
+        val scaledHeight: Int
+
+        // Match longest sides together -- i.e. apply center-crop transformation
+        if (viewFinderDimens.width > viewFinderDimens.height) {
+            scaledHeight = viewFinderDimens.width
+            scaledWidth = ((viewFinderDimens.width * bufferRatio).roundToInt())
+        } else {
+            scaledHeight = viewFinderDimens.height
+            scaledWidth = ((viewFinderDimens.height * bufferRatio).roundToInt())
+        }
+
+        // save the scaled dimens for use with the overlay
+        cachedTargetDimens = Size(scaledWidth, scaledHeight)
+
+        // Compute the relative scale value
+        val xScale = scaledWidth / viewFinderDimens.width.toFloat()
+        val yScale = scaledHeight / viewFinderDimens.height.toFloat()
+
+        // Scale input buffers to fill the view finder
+        matrix.preScale(xScale, yScale, centerX, centerY)
+
+        // Finally, apply transformations to our TextureView
+        tv.setTransform(matrix)
+    }
+
+    private fun updateOverlayTransform(overlayView: FacePointsView?, size: Size) {
+        if (overlayView == null) return
+
+        if (size == cachedAnalysisDimens) {
+            // nothing has changed since the last update, so return early
+            return
+        } else {
+            cachedAnalysisDimens = size
+        }
+
+        Timber.d("cachedAnalysisDimens are now $cachedAnalysisDimens")
+        Timber.d("cachedTargetDimens are now $cachedTargetDimens")
+        Timber.d("viewFinderDimens are now $viewFinderDimens")
+
+        overlayView.transform = overlayMatrix()
+    }
+
+    private fun overlayMatrix(): Matrix {
+        val matrix = Matrix()
+
+        // ---- SCALE the overlay to match the preview ----
+        // Buffers are rotated relative to the device's
+        // 'natural' orientation: swap width and height
+        val scale = cachedTargetDimens.height.toFloat() /
+                cachedAnalysisDimens.width.toFloat()
+
+        // Scale input buffers to fill the view finder
+        matrix.preScale(scale, scale)
+
+        // ---- MOVE the overlay ----
+        // move all the points of the overlay so that the relative (0,0)
+        // point is at the top-left of the preview
+        val xTranslate: Float; val yTranslate: Float
+        if (viewFinderDimens.width > viewFinderDimens.height) {
+            // portrait: viewFinder width corresponds to target height
+            xTranslate = (viewFinderDimens.width
+                    - cachedTargetDimens.height) / 2f
+            yTranslate = (viewFinderDimens.height
+                    - cachedTargetDimens.width) / 2f
+        } else {
+            // landscape: viewFinder width corresponds to target width
+            xTranslate = (viewFinderDimens.width
+                    - cachedTargetDimens.width) / 2f
+            yTranslate = (viewFinderDimens.height
+                    - cachedTargetDimens.height) / 2f
+        }; matrix.postTranslate(xTranslate, yTranslate)
+
+        // ---- MIRROR the overlay ----
+        // Compute the center of the view finder
+        val centerX = viewFinderDimens.width / 2f
+        val centerY = viewFinderDimens.height / 2f
+        matrix.postScale(-1f, 1f, centerX, centerY)
+
+        return matrix
+    }
+
+    companion object {
+        private const val RC_CAMERA_PERMISSION = 4512
+        private const val FILENAME_FORMAT = "DROWSY_%s"
+        private const val FOLDER_NAME = "gallery"
+        private val FILENAME_DATE_FORMAT = SimpleDateFormat(
+            "MM_dd_yyyy_HHmmss", Locale.US)
+
+        /** Helper function that gets the
+         * rotation of a [Display] in degrees */
+        fun getDisplaySurfaceRotation(display: Display?)
+                = when (display?.rotation) {
+            Surface.ROTATION_0 -> 0
+            Surface.ROTATION_90 -> 90
+            Surface.ROTATION_180 -> 180
+            Surface.ROTATION_270 -> 270
+            else -> null
+        }
     }
 
 }

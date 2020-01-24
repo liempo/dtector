@@ -4,12 +4,14 @@ apply plugin: 'kotlin-android'
 
 apply plugin: 'kotlin-android-extensions'
 
+apply plugin: 'com.google.gms.google-services'
+
 android {
     compileSdkVersion 29
     buildToolsVersion "29.0.2"
     defaultConfig {
         applicationId "com.liempo.drowsy"
-        minSdkVersion 25
+        minSdkVersion 26
         targetSdkVersion 29
         versionCode 1
     }
@@ -21,6 +23,10 @@ android {
                     'proguard-android-optimize.txt'),
                     'proguard-rules.pro'
         }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
     }
 }
 
@@ -37,9 +43,19 @@ dependencies {
     implementation 'androidx.navigation:navigation-fragment-ktx:2.1.0'
     implementation 'androidx.navigation:navigation-ui-ktx:2.1.0'
 
-    // Camera helper library
-    api 'com.otaliastudios:cameraview:2.6.1'
+    // noinspection GradleDependency [Version used in codelabs]
+    implementation "androidx.camera:camera-core:1.0.0-alpha06"
+
+    // noinspection GradleDependency [Version used in codelabs]
+    implementation "androidx.camera:camera-camera2:1.0.0-alpha06"
+    // Codelab URL for CameraX:
+    // https://codelabs.developers.google.com/codelabs/camerax-getting-started/
 
     // Essential utilities
     implementation 'com.jakewharton.timber:timber:4.7.1'
+
+    // Firebase stuff
+    implementation 'com.google.firebase:firebase-ml-vision:24.0.1'
+    implementation 'com.google.firebase:firebase-ml-vision-face-model:19.0.0'
+
 }
