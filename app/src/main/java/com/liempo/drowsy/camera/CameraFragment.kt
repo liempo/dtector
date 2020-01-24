@@ -86,6 +86,8 @@ class CameraFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        back_button.setOnClickListener { activity?.onBackPressed() }
+
         // Check Camera permissions
         if (activity?.checkSelfPermission(CAMERA)
             == PackageManager.PERMISSION_GRANTED)
