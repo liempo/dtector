@@ -41,7 +41,6 @@ class GalleryAdapter(private val items: List<String>,
         holder.date.text = DISPLAY_DATE_FORMAT.format(date)
         holder.time.text = DISPLAY_TIME_FORMAT.format(date)
 
-        holder.card.tag = path
         holder.card.setOnClickListener {
             it.findNavController().navigate(
                 GalleryFragmentDirections.

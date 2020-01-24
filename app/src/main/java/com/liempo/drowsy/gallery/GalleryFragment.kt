@@ -24,6 +24,8 @@ class GalleryFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        back_button.setOnClickListener { activity?.onBackPressed() }
+
         with (recycler_view) {
             layoutManager = GridLayoutManager(context, 2)
 
