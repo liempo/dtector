@@ -9,5 +9,14 @@
         android:id="@+id/home"
         android:name="com.liempo.drowsy.home.HomeFragment"
         android:label="Home"
-        tools:layout="@layout/home_fragment" />
+        tools:layout="@layout/home_fragment" >
+        <action
+            android:id="@+id/action_home_to_camera"
+            app:destination="@id/camera" />
+    </fragment>
+    <fragment
+        android:id="@+id/camera"
+        android:name="com.liempo.drowsy.camera.CameraFragment"
+        android:label="Camera"
+        tools:layout="@layout/camera_fragment" />
 </navigation>
