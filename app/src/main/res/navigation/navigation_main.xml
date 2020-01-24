@@ -26,5 +26,18 @@
         android:id="@+id/gallery"
         android:name="com.liempo.drowsy.gallery.GalleryFragment"
         android:label="Gallery"
-        tools:layout="@layout/fragment_gallery" />
+        tools:layout="@layout/fragment_gallery" >
+        <action
+            android:id="@+id/action_gallery_to_photo"
+            app:destination="@+id/photo" />
+    </fragment>
+    <fragment
+        android:id="@+id/photo"
+        android:name="com.liempo.drowsy.gallery.PhotoFragment"
+        android:label="Photo"
+        tools:layout="@layout/fragment_photo" >
+        <argument
+            android:name="path"
+            app:argType="string" />
+    </fragment>
 </navigation>

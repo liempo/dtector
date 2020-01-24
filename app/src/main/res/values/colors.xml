@@ -6,4 +6,6 @@
 
     <color name="colorPrimaryText">#DE000000</color>
     <color name="colorSecondaryText">#8A000000</color>
+
+    <color name="colorTransparentBackground">#99000000</color>
 </resources>
