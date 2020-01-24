@@ -18,7 +18,10 @@
             app:destination="@id/gallery" />
         <action
             android:id="@+id/openSettings"
-            app:destination="@id/settingsFragment" />
+            app:destination="@id/settings" />
+        <action
+            android:id="@+id/openAbout"
+            app:destination="@id/about" />
     </fragment>
     <fragment
         android:id="@+id/camera"
@@ -44,7 +47,12 @@
             app:argType="string" />
     </fragment>
     <fragment
-        android:id="@+id/settingsFragment"
+        android:id="@+id/settings"
         android:name="com.liempo.drowsy.settings.SettingsFragment"
-        android:label="SettingsFragment" />
+        android:label="Settings" />
+    <fragment
+        android:id="@+id/about"
+        android:name="com.liempo.drowsy.AboutFragment"
+        android:label="About"
+        tools:layout="@layout/fragment_about" />
 </navigation>
