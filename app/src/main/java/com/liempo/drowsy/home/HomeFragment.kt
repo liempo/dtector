@@ -31,6 +31,12 @@ class HomeFragment : Fragment() {
             findNavController().navigate(
                 HomeFragmentDirections.openGallery())
         }
+
+        settings_card.setOnClickListener {
+            findNavController().navigate(
+                HomeFragmentDirections.openSettings()
+            )
+        }
     }
 
 }

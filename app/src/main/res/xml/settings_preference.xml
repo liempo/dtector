@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <PreferenceCategory
+        app:title="Settings">
+
+        <SeekBarPreference
+            app:title="Seconds beofore the alarm"
+            app:key="pref_seconds"
+            app:showSeekBarValue="true"
+            android:max="10" app:min="3"
+            app:defaultValue="3"/>
+
+    </PreferenceCategory>
+
+    <Preference
+        app:title="Back"
+        app:key="pref_back" />
+
+</PreferenceScreen>

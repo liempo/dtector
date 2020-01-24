@@ -16,6 +16,9 @@
         <action
             android:id="@+id/openGallery"
             app:destination="@id/gallery" />
+        <action
+            android:id="@+id/openSettings"
+            app:destination="@id/settingsFragment" />
     </fragment>
     <fragment
         android:id="@+id/camera"
@@ -40,4 +43,8 @@
             android:name="path"
             app:argType="string" />
     </fragment>
+    <fragment
+        android:id="@+id/settingsFragment"
+        android:name="com.liempo.drowsy.settings.SettingsFragment"
+        android:label="SettingsFragment" />
 </navigation>
