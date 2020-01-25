@@ -65,7 +65,7 @@ class CameraFragment : Fragment() {
     /** For counting purposes lol */
     private lateinit var timer: CountDownTimer
 
-    /** Sound objects for alarm stuff*/
+    /** Sound objects for alarm_1 stuff*/
     private lateinit var alarm: MediaPlayer
     private lateinit var tick: MediaPlayer
 
@@ -99,7 +99,7 @@ class CameraFragment : Fragment() {
         }
 
         tick = MediaPlayer.create(context, R.raw.tick)
-        alarm = MediaPlayer.create(context, R.raw.alarm)
+        alarm = MediaPlayer.create(context, R.raw.alarm_1)
 
         cancel_alarm_button.setOnClickListener {
             if (alarm.isPlaying) {
