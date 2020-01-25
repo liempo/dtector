@@ -25,7 +25,6 @@ class FaceAnalyzer : ImageAnalysis.Analyzer {
 
     private val faceDetector: FirebaseVisionFaceDetector by lazy {
         val options = Builder()
-            .setContourMode(ALL_CONTOURS)
             .setPerformanceMode(FAST)
             .setClassificationMode(ALL_CLASSIFICATIONS)
             .build()
