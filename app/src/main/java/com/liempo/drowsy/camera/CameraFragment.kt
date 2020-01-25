@@ -98,8 +98,18 @@ class CameraFragment : Fragment() {
             requestPermissions(arrayOf(CAMERA), RC_CAMERA_PERMISSION)
         }
 
+        val sharedPreferences = PreferenceManager
+            .getDefaultSharedPreferences(context)
+        val alarmId = when(sharedPreferences.getString(
+            "pref_alarm", "alarm_1")) {
+            "alarm_1" -> R.raw.alarm_1
+            "alarm_2" -> R.raw.alarm_2
+            "alarm_3" -> R.raw.alarm_3
+            else -> R.raw.alarm_1
+        }
+
         tick = MediaPlayer.create(context, R.raw.tick)
-        alarm = MediaPlayer.create(context, R.raw.alarm_1)
+        alarm = MediaPlayer.create(context, alarmId)
 
         cancel_alarm_button.setOnClickListener {
             if (alarm.isPlaying) {

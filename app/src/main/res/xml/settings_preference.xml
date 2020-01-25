@@ -12,6 +12,11 @@
             android:max="10" app:min="3"
             app:defaultValue="3"/>
 
+        <DropDownPreference
+            android:key="pref_alarm"
+            android:title="Alarm Sound"
+            app:useSimpleSummaryProvider="true" />
+
     </PreferenceCategory>
 
     <Preference
