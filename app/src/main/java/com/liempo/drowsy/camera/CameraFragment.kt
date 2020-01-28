@@ -191,6 +191,7 @@ class CameraFragment : Fragment() {
 
                     noFaceListener = {
                         stopCount()
+                        startAlarm()
                     }
 
                     eyesClosedListener = {
