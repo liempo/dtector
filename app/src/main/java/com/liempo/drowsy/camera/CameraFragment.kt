@@ -105,7 +105,7 @@ class CameraFragment : Fragment() {
             else -> R.raw.alarm_1
         }
 
-        tick = MediaPlayer.create(context, R.raw.tick)
+        tick = MediaPlayer.create(context, R.raw.tick) .apply { isLooping = true }
         alarm = MediaPlayer.create(context, alarmId).apply { isLooping = true }
 
         cancel_alarm_button.setOnClickListener {
