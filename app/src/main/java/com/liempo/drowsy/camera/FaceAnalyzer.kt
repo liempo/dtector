@@ -1,6 +1,5 @@
 package com.liempo.drowsy.camera
 import android.graphics.PointF
-import android.util.Size
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
 import com.google.android.gms.tasks.OnFailureListener
@@ -18,8 +17,6 @@ import java.util.concurrent.atomic.AtomicBoolean
 class FaceAnalyzer : ImageAnalysis.Analyzer {
 
     private var isAnalyzing = AtomicBoolean(false)
-    var pointsListListener: ((List<PointF>) -> Unit)? = null
-    var analysisSizeListener: ((Size) -> Unit)? = null
     var eyesClosedListener: ((Boolean) -> Unit)? = null
     var noFaceListener: (() -> Unit)? = null
 
@@ -47,7 +44,6 @@ class FaceAnalyzer : ImageAnalysis.Analyzer {
                      face.rightEyeOpenProbability < 0.1f)
                 )
         }
-        pointsListListener?.invoke(points)
     }
 
     private val failureListener = OnFailureListener { e ->
@@ -60,8 +56,6 @@ class FaceAnalyzer : ImageAnalysis.Analyzer {
 
         if (isAnalyzing.get()) return
         isAnalyzing.set(true)
-
-        analysisSizeListener?.invoke(Size(image.width, image.height))
 
         val firebaseVisionImage =
             FirebaseVisionImage.fromMediaImage(

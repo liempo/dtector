@@ -28,6 +28,7 @@ import java.io.File
 import java.util.*
 import kotlin.math.roundToInt
 
+// TODO FIX THIS FUCKING HELL
 class CameraFragment : Fragment() {
 
     /** Internal variable used to keep track
@@ -49,10 +50,6 @@ class CameraFragment : Fragment() {
     /** Internal variable used to keep
      * track of the view's display */
     private var viewFinderDisplay: Int = -1
-
-    /** Internal variable used to keep
-     * track of the image analysis dimension */
-    private var cachedAnalysisDimens = Size(0, 0)
 
     /** Internal variable used to keep track
      * of the calculated dimension of the preview image */
@@ -192,17 +189,10 @@ class CameraFragment : Fragment() {
                     context
                 ), FaceAnalyzer().apply {
 
-                    pointsListListener = { points ->
-                        // Handles multi-threading issues
-                        if (face_points_view != null)
-                            face_points_view.points = points
-                    }
-                    analysisSizeListener = {
-                        updateOverlayTransform(face_points_view, it)
-                    }
                     noFaceListener = {
                         stopCount()
                     }
+
                     eyesClosedListener = {
                         if (alarm.isPlaying.not()) {
                             if (it)
@@ -210,6 +200,7 @@ class CameraFragment : Fragment() {
                             else stopCount()
                         }
                     }
+
                 })
         }
 
@@ -251,8 +242,6 @@ class CameraFragment : Fragment() {
                 camera_preview.display)
             updateTransform(camera_preview, rot,
                 it.textureSize, viewFinderDimens)
-            updateOverlayTransform(face_points_view,
-                cachedAnalysisDimens)
         }
 
         // Every time the provided texture view changes, recompute layout
@@ -262,10 +251,7 @@ class CameraFragment : Fragment() {
             val newViewFinderDimens = Size(
                 right - left, bottom - top)
             val rot = getDisplaySurfaceRotation(vf.display)
-            updateTransform(vf, rot,
-                bufferDimens, newViewFinderDimens)
-            updateOverlayTransform(face_points_view,
-                cachedAnalysisDimens)
+            updateTransform(vf, rot, bufferDimens, newViewFinderDimens)
         }
 
         val displayListener = object : DisplayManager.DisplayListener {
@@ -277,8 +263,6 @@ class CameraFragment : Fragment() {
                     val rot = getDisplaySurfaceRotation(display)
                     updateTransform(camera_preview, rot,
                         bufferDimens, viewFinderDimens)
-                    updateOverlayTransform(face_points_view,
-                        cachedAnalysisDimens)
                 }
             }
         }
@@ -435,10 +419,12 @@ class CameraFragment : Fragment() {
         // Match longest sides together -- i.e. apply center-crop transformation
         if (viewFinderDimens.width > viewFinderDimens.height) {
             scaledHeight = viewFinderDimens.width
-            scaledWidth = ((viewFinderDimens.width * bufferRatio).roundToInt())
+            scaledWidth = ((viewFinderDimens.width
+                    * bufferRatio).roundToInt())
         } else {
             scaledHeight = viewFinderDimens.height
-            scaledWidth = ((viewFinderDimens.height * bufferRatio).roundToInt())
+            scaledWidth = ((viewFinderDimens.height
+                    * bufferRatio).roundToInt())
         }
 
         // save the scaled dimens for use with the overlay
@@ -455,65 +441,9 @@ class CameraFragment : Fragment() {
         tv.setTransform(matrix)
     }
 
-    private fun updateOverlayTransform(overlayView: FacePointsView?, size: Size) {
-        if (overlayView == null) return
-
-        if (size == cachedAnalysisDimens) {
-            // nothing has changed since the last update, so return early
-            return
-        } else {
-            cachedAnalysisDimens = size
-        }
-
-        Timber.d("cachedAnalysisDimens are now $cachedAnalysisDimens")
-        Timber.d("cachedTargetDimens are now $cachedTargetDimens")
-        Timber.d("viewFinderDimens are now $viewFinderDimens")
-
-        overlayView.transform = overlayMatrix()
-    }
-
-    private fun overlayMatrix(): Matrix {
-        val matrix = Matrix()
-
-        // ---- SCALE the overlay to match the preview ----
-        // Buffers are rotated relative to the device's
-        // 'natural' orientation: swap width and height
-        val scale = cachedTargetDimens.height.toFloat() /
-                cachedAnalysisDimens.width.toFloat()
-
-        // Scale input buffers to fill the view finder
-        matrix.preScale(scale, scale)
-
-        // ---- MOVE the overlay ----
-        // move all the points of the overlay so that the relative (0,0)
-        // point is at the top-left of the preview
-        val xTranslate: Float; val yTranslate: Float
-        if (viewFinderDimens.width > viewFinderDimens.height) {
-            // portrait: viewFinder width corresponds to target height
-            xTranslate = (viewFinderDimens.width
-                    - cachedTargetDimens.height) / 2f
-            yTranslate = (viewFinderDimens.height
-                    - cachedTargetDimens.width) / 2f
-        } else {
-            // landscape: viewFinder width corresponds to target width
-            xTranslate = (viewFinderDimens.width
-                    - cachedTargetDimens.width) / 2f
-            yTranslate = (viewFinderDimens.height
-                    - cachedTargetDimens.height) / 2f
-        }; matrix.postTranslate(xTranslate, yTranslate)
-
-        // ---- MIRROR the overlay ----
-        // Compute the center of the view finder
-        val centerX = viewFinderDimens.width / 2f
-        val centerY = viewFinderDimens.height / 2f
-        matrix.postScale(-1f, 1f, centerX, centerY)
-
-        return matrix
-    }
 
     companion object {
         private const val RC_CAMERA_PERMISSION = 4512
-
 
         /** Helper function that gets the
          * rotation of a [Display] in degrees */
