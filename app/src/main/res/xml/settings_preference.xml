@@ -6,7 +6,7 @@
         app:title="Settings">
 
         <SeekBarPreference
-            app:title="Seconds beofore the alarm"
+            app:title="Time Sensitivity"
             app:key="pref_seconds"
             app:showSeekBarValue="true"
             android:max="10" app:min="3"
