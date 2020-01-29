@@ -313,10 +313,11 @@ class CameraFragment : Fragment() {
         capture.takePicture(captured, ContextCompat
             .getMainExecutor(context), onImageSavedListener)
     }
-
     private fun startCount() {
         // Handles error in threading
         if (time_text == null) return
+        if (alarm.isPlaying) return
+
 
         time_text.visibility = View.VISIBLE
 
@@ -333,6 +334,7 @@ class CameraFragment : Fragment() {
     private fun stopCount() {
         // Handles error in threading
         if (time_text == null) return
+        if (alarm.isPlaying) return
 
         time_text.visibility = View.INVISIBLE
 
